@@ -1,78 +1,112 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
+//package graph;
+
+import java.io.*;
 import java.util.HashSet;
 import java.util.StringTokenizer;
 
 public class networkBreakdown {
+
+    static int[] size;
     static int[] parent;
-    static int[] rank;
-    static class Pair{
-        int u;
-        int v;
-        public Pair(int u, int v){
-            this.u = u;
-            this.v = v;
-        }
+    static int component;
+
+    public static int find(int x){
+        if(x==parent[x]) return x;
+        return parent[x]=find(parent[x]);
     }
-    public static void main(String[] args) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        StringTokenizer st = new StringTokenizer(br.readLine());
 
-        int n = Integer.parseInt(br.readLine());
-        int m = Integer.parseInt(br.readLine());
-        int k = Integer.parseInt(br.readLine());
+    public static boolean union(int x,int y){
+        int parent_u=find(x);
+        int parent_v=find(y);
 
-        parent = new int[n+1];
-        rank = new int[n+1];
+        if(parent_u==parent_v) return false;
 
-        for(int i =1; i<=n ; i++){
-            parent[i] = i;
+        if(size[parent_u]<size[parent_v]){
+            int temp=parent_u;
+            parent_u=parent_v;
+            parent_v=temp;
         }
-        ArrayList<Pair> edge = new ArrayList<>();
-        HashSet<Pair> breakdown = new HashSet<>();
-        for(int i=0; i<m ; i++){
-            int u = Integer.parseInt(br.readLine());
-            int v = Integer.parseInt(br.readLine());
-            edge.add(new Pair(u,v));
-        }
-        for(int i=0; i<k ; i++){
-            int u = Integer.parseInt(br.readLine());
-            int v = Integer.parseInt(br.readLine());
-            breakdown.add(new Pair(u,v));
-            breakdown.add(new Pair(v,u));
-        }
-        for(Pair p: edge){
-            int a =p.u, b=p.v;
-            if(unionRank(a,b)){
 
+        parent[parent_v]=parent_u;
+        size[parent_u]+=size[parent_v];
+        component--;
+        return true;
+    }
+
+    public static void main(String[] args)throws IOException{
+
+        BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
+        StringTokenizer st=new StringTokenizer(br.readLine());
+
+        HashSet<Long> set = new HashSet<>();
+
+        int n=Integer.parseInt(st.nextToken());
+        int m=Integer.parseInt(st.nextToken());
+        int k=Integer.parseInt(st.nextToken());
+
+        int[][] edges=new int[m][2];
+        int[][] removedEdge=new int[k][2];
+
+        parent=new int[n+1];
+        size=new int[n+1];
+        component=n;
+
+        for(int i=1;i<=n;i++){
+            parent[i]=i;
+            size[i]=1;
+        }
+
+        // edges added
+        for(int i=0;i<m;i++){
+            st=new StringTokenizer(br.readLine());
+            int u=Integer.parseInt(st.nextToken());
+            int v=Integer.parseInt(st.nextToken());
+
+            int a=Math.min(u,v);
+            int b=Math.max(u,v);
+
+            edges[i][0]=a;
+            edges[i][1]=b;
+        }
+
+        // removed edges
+        for(int i=0;i<k;i++){
+            st=new StringTokenizer(br.readLine());
+            int u=Integer.parseInt(st.nextToken());
+            int v=Integer.parseInt(st.nextToken());
+
+            int a=Math.min(u,v);
+            int b=Math.max(u,v);
+
+            removedEdge[i][0]=a;
+            removedEdge[i][1]=b;
+
+            set.add((long)a<<32|b);
+        }
+
+        // build  graph
+        for(int[] edge:edges){
+            int u=edge[0];
+            int v=edge[1];
+
+            if(!set.contains((long)u<<32|v)){
+                union(u,v);
             }
         }
 
+        int[] ans=new int[k];
 
+        // reverse order add edges
+        for(int i=k-1;i>=0;i--){
+            ans[i]=component;
+            union(removedEdge[i][0],removedEdge[i][1]);
+        }
 
-    }
-    public static int find(int x){
-        if(x==parent[x]) return x;
-        return parent[x]= find(parent[x]);
-    }
-    public static boolean unionRank(int x, int y){
-        int p_x = find(x);
-        int p_y = find(y);
-        if(p_x == p_y){
-            return false;
+        StringBuilder sb=new StringBuilder();
+        for(int x:ans){
+            sb.append(x).append(" ");
         }
-        if(rank[p_x]> rank[p_y]){
-            parent[p_y] = p_x;
-        }
-        else if(rank[p_x] < rank[p_y]){
-            parent[p_x] = p_y;
-        }
-        else{
-            parent[p_x]=p_y;
-            rank[p_y]++;
-        }
-        return true;
+
+        System.out.println(sb.toString());
     }
 }
